@@ -7,6 +7,7 @@ import (
 	"crypto/tls"
 	"flag"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -20,10 +21,10 @@ import (
 var (
 	pCertPath = flag.String("cert", "", "Filepath to certificate")
 	pKeyPath  = flag.String("key", "", "Filepath to private key")
-	pAddr     = flag.String("addr", "", "Server address")
+	pAddr     = flag.String("addr", ":0", "Server address")
 	pAuth     = flag.String("auth", "", "Server authentication username:password")
 	pAvoid    = flag.String("avoid", "", "Site to be avoided")
-	pVerbose  = flag.Bool("verbose", false, "Set log level to DEBUG")
+	pLog      = flag.String("log", "info", "Log level")
 
 	pDestDialTimeout         = flag.Duration("dest.dial.timeout", 10*time.Second, "Destination dial timeout")
 	pDestReadTimeout         = flag.Duration("dest.read.timeout", 5*time.Second, "Destination read timeout")
@@ -46,11 +47,11 @@ func main() {
 	c := zap.NewProductionConfig()
 	c.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
 
-	if *pVerbose {
-		c.Level.SetLevel(zapcore.DebugLevel)
-	} else {
-		c.Level.SetLevel(zapcore.ErrorLevel)
+	level, err := zapcore.ParseLevel(*pLog)
+	if err != nil {
+		log.Fatalf("Error: failed to parse log level: %v", err)
 	}
+	c.Level.SetLevel(level)
 
 	logger, err := c.Build()
 	if err != nil {
@@ -113,13 +114,11 @@ func main() {
 		close(idleConnsClosed)
 	}()
 
-	p.Logger.Info("Server starting", zap.String("address", s.Addr))
-
 	var svrErr error
 	if *pCertPath != "" && *pKeyPath != "" || *pLetsEncrypt {
-		svrErr = s.ListenAndServeTLS(*pCertPath, *pKeyPath)
+		svrErr = ListenAndServeTLS(s, *pCertPath, *pKeyPath, p.Logger)
 	} else {
-		svrErr = s.ListenAndServe()
+		svrErr = ListenAndServe(s, p.Logger)
 	}
 
 	if svrErr != http.ErrServerClosed {
@@ -128,4 +127,35 @@ func main() {
 
 	<-idleConnsClosed
 	p.Logger.Info("Server stopped")
+}
+
+func ListenAndServeTLS(srv *http.Server, certFile, keyFile string, logger *zap.Logger) error {
+	addr := srv.Addr
+	if addr == "" {
+		addr = ":https"
+	}
+
+	ln, err := net.Listen("tcp", addr)
+	if err != nil {
+		return err
+	}
+	logger.Info("Server starting", zap.String("Listening", ln.Addr().String()))
+
+	defer ln.Close()
+
+	return srv.ServeTLS(ln, certFile, keyFile)
+}
+
+func ListenAndServe(srv *http.Server, logger *zap.Logger) error {
+	addr := srv.Addr
+	if addr == "" {
+		addr = ":http"
+	}
+	ln, err := net.Listen("tcp", addr)
+	if err != nil {
+		return err
+	}
+	logger.Info("Server starting", zap.String("Listening", ln.Addr().String()))
+
+	return srv.Serve(ln)
 }
