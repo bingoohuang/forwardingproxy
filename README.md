@@ -175,30 +175,6 @@ used as HTTP cache. Squid and TinyProxy are closest to be working as forwarding
 proxies, however it can be difficult to set them up on a new Amazon Linux 2 AMI
 EC2 instance, and TinyProxy is not maintained anymore since several years.
 
-Alternatives to _Make vs Buy_ would be:
-
-Heroku's [Private Spaces](https://www.heroku.com/private-spaces) feature stable
-outbound IPs:
-
-> **Stable outbound IPs**
->
->Securely connect apps to third party cloud services and corporate networks.
-
-This would weight in with a price tag of either $1000 or $3000 respectively for
-GDPR compliance.
-
-Another _Make vs Buy_ alternative would be hosted Heroku's Add-ons that would
-offer stable IP support such as
-[Fixie](https://elements.heroku.com/addons/fixie),
-[Guru301](https://elements.heroku.com/addons/guru301),
-[Proximo](https://elements.heroku.com/addons/proximo), [QuotaGuard
-Static](https://elements.heroku.com/addons/quotaguardstatic),
-
-_Fixie_ and _Guru301_ only support Heroku's _United States_ region, not Europe.
-_QuotaGuard Static_ and _Proximo_ both support Heroku's _Europe_ region and
-would offer 20,000 respectively 50,000 requests per month for $19 respectively
-$25 per month.
-
 ## License
 
 MIT License.
