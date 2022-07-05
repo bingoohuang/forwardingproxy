@@ -199,6 +199,34 @@ _QuotaGuard Static_ and _Proximo_ both support Heroku's _Europe_ region and
 would offer 20,000 respectively 50,000 requests per month for $19 respectively
 $25 per month.
 
-# License
+## License
 
 MIT License.
+
+## HTTP(S) Proxy in Golang in less than 100 lines of code
+
+[blog](https://medium.com/@mlowicki/http-s-proxy-in-golang-in-less-than-100-lines-of-code-6a51c2f2c38c)
+
+### HTTP
+
+To support HTTP we’ll use built-in HTTP server and client. The role of proxy is to handle HTTP request, pass such
+request to destination server and send response back to the client.
+
+![img.png](_assets/img.png)
+
+### HTTP CONNECT tunneling
+
+Suppose client wants to use either HTTPS or WebSockets in order to talk to server. Client is aware of using proxy.
+Simple HTTP request / response flow cannot be used since client needs to e.g. establish secure connection with server (
+HTTPS) or wants to use other protocol over TCP connection (WebSockets). Technique which works is to use
+HTTP [CONNECT](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/CONNECT)
+method. It tells the proxy server to establish TCP connection with destination server and when done to proxy the TCP
+stream to and from the client. This way proxy server won’t terminate SSL but will simply pass data between client and
+destination server so these two parties can establish secure connection.
+
+![img.png](_assets/img02.png)
+
+Presented code is not a production-grade solution. It lacks e.g.
+handling [hop-by-hop headers](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers#hbh), setting up timeouts while
+copying data between two connections or the ones exposed by net/http — more on this in “[The complete guide to Go
+net/http timeouts](https://blog.cloudflare.com/the-complete-guide-to-golang-net-http-timeouts/)”.

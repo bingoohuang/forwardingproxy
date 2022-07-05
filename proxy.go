@@ -88,6 +88,8 @@ func (p *Proxy) handleTunneling(w http.ResponseWriter, r *http.Request) {
 
 	p.Logger.Debug("Hijacking", zap.String("host", r.Host))
 
+	// Hijacker interface allows to take over the connection. After that the caller is
+	// responsible to manage such connection (HTTP library won’t do it anymore).
 	hijacker, ok := w.(http.Hijacker)
 	if !ok {
 		p.Logger.Error("Hijacking not supported")
