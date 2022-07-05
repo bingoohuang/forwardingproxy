@@ -17,37 +17,36 @@ import (
 	"golang.org/x/crypto/acme/autocert"
 )
 
+var (
+	pCertPath = flag.String("cert", "", "Filepath to certificate")
+	pKeyPath  = flag.String("key", "", "Filepath to private key")
+	pAddr     = flag.String("addr", "", "Server address")
+	pAuth     = flag.String("auth", "", "Server authentication username:password")
+	pAvoid    = flag.String("avoid", "", "Site to be avoided")
+	pVerbose  = flag.Bool("verbose", false, "Set log level to DEBUG")
+
+	pDestDialTimeout         = flag.Duration("dest.dial.timeout", 10*time.Second, "Destination dial timeout")
+	pDestReadTimeout         = flag.Duration("dest.read.timeout", 5*time.Second, "Destination read timeout")
+	pDestWriteTimeout        = flag.Duration("dest.write.timeout", 5*time.Second, "Destination write timeout")
+	pClientReadTimeout       = flag.Duration("client.read.timeout", 5*time.Second, "Client read timeout")
+	pClientWriteTimeout      = flag.Duration("client.write.timeout", 5*time.Second, "Client write timeout")
+	pServerReadTimeout       = flag.Duration("server.read.timeout", 30*time.Second, "Server read timeout")
+	pServerReadHeaderTimeout = flag.Duration("server.read.header.timeout", 30*time.Second, "Server read header timeout")
+	pServerWriteTimeout      = flag.Duration("server.write.timeout", 30*time.Second, "Server write timeout")
+	pServerIdleTimeout       = flag.Duration("server.idle.timeout", 30*time.Second, "Server idle timeout")
+
+	pLetsEncrypt = flag.Bool("le", false, "Use letsencrypt for https")
+	pLEWhitelist = flag.String("le.whitelist", "", "Hostname to whitelist for letsencrypt")
+	pLECacheDir  = flag.String("le.cache.dir", "/tmp", "Cache directory for certificates")
+)
+
 func main() {
-	var (
-		flagCertPath = flag.String("cert", "", "Filepath to certificate")
-		flagKeyPath  = flag.String("key", "", "Filepath to private key")
-		flagAddr     = flag.String("addr", "", "Server address")
-		flagAuthUser = flag.String("user", "", "Server authentication username")
-		flagAuthPass = flag.String("pass", "", "Server authentication password")
-		flagAvoid    = flag.String("avoid", "", "Site to be avoided")
-		flagVerbose  = flag.Bool("verbose", false, "Set log level to DEBUG")
-
-		flagDestDialTimeout         = flag.Duration("destdialtimeout", 10*time.Second, "Destination dial timeout")
-		flagDestReadTimeout         = flag.Duration("destreadtimeout", 5*time.Second, "Destination read timeout")
-		flagDestWriteTimeout        = flag.Duration("destwritetimeout", 5*time.Second, "Destination write timeout")
-		flagClientReadTimeout       = flag.Duration("clientreadtimeout", 5*time.Second, "Client read timeout")
-		flagClientWriteTimeout      = flag.Duration("clientwritetimeout", 5*time.Second, "Client write timeout")
-		flagServerReadTimeout       = flag.Duration("serverreadtimeout", 30*time.Second, "Server read timeout")
-		flagServerReadHeaderTimeout = flag.Duration("serverreadheadertimeout", 30*time.Second, "Server read header timeout")
-		flagServerWriteTimeout      = flag.Duration("serverwritetimeout", 30*time.Second, "Server write timeout")
-		flagServerIdleTimeout       = flag.Duration("serveridletimeout", 30*time.Second, "Server idle timeout")
-
-		flagLetsEncrypt = flag.Bool("letsencrypt", false, "Use letsencrypt for https")
-		flagLEWhitelist = flag.String("lewhitelist", "", "Hostname to whitelist for letsencrypt")
-		flagLECacheDir  = flag.String("lecachedir", "/tmp", "Cache directory for certificates")
-	)
-
 	flag.Parse()
 
 	c := zap.NewProductionConfig()
 	c.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
 
-	if *flagVerbose {
+	if *pVerbose {
 		c.Level.SetLevel(zapcore.DebugLevel)
 	} else {
 		c.Level.SetLevel(zapcore.ErrorLevel)
@@ -61,41 +60,40 @@ func main() {
 	stdLogger := zap.NewStdLog(logger)
 
 	p := &Proxy{
-		ForwardingHTTPProxy: NewForwardingHTTPProxy(stdLogger),
-		Logger:              logger,
-		AuthUser:            *flagAuthUser,
-		AuthPass:            *flagAuthPass,
-		DestDialTimeout:     *flagDestDialTimeout,
-		DestReadTimeout:     *flagDestReadTimeout,
-		DestWriteTimeout:    *flagDestWriteTimeout,
-		ClientReadTimeout:   *flagClientReadTimeout,
-		ClientWriteTimeout:  *flagClientWriteTimeout,
-		Avoid:               *flagAvoid,
+		Forwarding:         NewForwardingHTTPProxy(stdLogger),
+		Logger:             logger,
+		Auth:               *pAuth,
+		DestDialTimeout:    *pDestDialTimeout,
+		DestReadTimeout:    *pDestReadTimeout,
+		DestWriteTimeout:   *pDestWriteTimeout,
+		ClientReadTimeout:  *pClientReadTimeout,
+		ClientWriteTimeout: *pClientWriteTimeout,
+		Avoid:              *pAvoid,
 	}
 
 	s := &http.Server{
-		Addr:              *flagAddr,
+		Addr:              *pAddr,
 		Handler:           p,
 		ErrorLog:          stdLogger,
-		ReadTimeout:       *flagServerReadTimeout,
-		ReadHeaderTimeout: *flagServerReadHeaderTimeout,
-		WriteTimeout:      *flagServerWriteTimeout,
-		IdleTimeout:       *flagServerIdleTimeout,
+		ReadTimeout:       *pServerReadTimeout,
+		ReadHeaderTimeout: *pServerReadHeaderTimeout,
+		WriteTimeout:      *pServerWriteTimeout,
+		IdleTimeout:       *pServerIdleTimeout,
 		TLSNextProto:      map[string]func(*http.Server, *tls.Conn, http.Handler){}, // Disable HTTP/2
 	}
 
-	if *flagLetsEncrypt {
-		if *flagLEWhitelist == "" {
-			p.Logger.Fatal("error: no -lewhitelist flag set")
+	if *pLetsEncrypt {
+		if *pLEWhitelist == "" {
+			p.Logger.Fatal("error: no -le.whitelist flag set")
 		}
-		if *flagLECacheDir == "/tmp" {
-			p.Logger.Info("-lecachedir should be set, using '/tmp' for now...")
+		if *pLECacheDir == "/tmp" {
+			p.Logger.Info("-le.cache.dir should be set, using '/tmp' for now...")
 		}
 
 		m := &autocert.Manager{
-			Cache:      autocert.DirCache(*flagLECacheDir),
+			Cache:      autocert.DirCache(*pLECacheDir),
 			Prompt:     autocert.AcceptTOS,
-			HostPolicy: autocert.HostWhitelist(*flagLEWhitelist),
+			HostPolicy: autocert.HostWhitelist(*pLEWhitelist),
 		}
 
 		s.Addr = ":https"
@@ -118,8 +116,8 @@ func main() {
 	p.Logger.Info("Server starting", zap.String("address", s.Addr))
 
 	var svrErr error
-	if *flagCertPath != "" && *flagKeyPath != "" || *flagLetsEncrypt {
-		svrErr = s.ListenAndServeTLS(*flagCertPath, *flagKeyPath)
+	if *pCertPath != "" && *pKeyPath != "" || *pLetsEncrypt {
+		svrErr = s.ListenAndServeTLS(*pCertPath, *pKeyPath)
 	} else {
 		svrErr = s.ListenAndServe()
 	}
@@ -131,4 +129,3 @@ func main() {
 	<-idleConnsClosed
 	p.Logger.Info("Server stopped")
 }
-

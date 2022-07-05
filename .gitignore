@@ -3,3 +3,4 @@
 /forwardingproxy*
 /cert.pem
 /key.pem
+/.vscode

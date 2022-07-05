@@ -19,32 +19,28 @@ func TestParseBasicProxyAuth(t *testing.T) {
 	// Arrange
 
 	cases := []struct {
-		name         string
-		givenAuth    string
-		expectedUser string
-		expectedPass string
-		expectedAuth bool
+		name           string
+		givenAuth      string
+		expectedAuth   string
+		expectedAuthOK bool
 	}{
 		{
-			name:         "ValidAuth",
-			givenAuth:    "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==",
-			expectedUser: "Aladdin",
-			expectedPass: "open sesame",
-			expectedAuth: true,
+			name:           "ValidAuth",
+			givenAuth:      "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==",
+			expectedAuth:   "Aladdin:open sesame",
+			expectedAuthOK: true,
 		},
 		{
-			name:         "InvalidAuth",
-			givenAuth:    "Basic ####",
-			expectedUser: "",
-			expectedPass: "",
-			expectedAuth: false,
+			name:           "InvalidAuth",
+			givenAuth:      "Basic ####",
+			expectedAuth:   "",
+			expectedAuthOK: false,
 		},
 		{
-			name:         "InvalidPrefix",
-			givenAuth:    "Foo QWxhZGRpbjpvcGVuIHNlc2FtZQ==",
-			expectedUser: "",
-			expectedPass: "",
-			expectedAuth: false,
+			name:           "InvalidPrefix",
+			givenAuth:      "Foo QWxhZGRpbjpvcGVuIHNlc2FtZQ==",
+			expectedAuth:   "",
+			expectedAuthOK: false,
 		},
 	}
 
@@ -52,13 +48,12 @@ func TestParseBasicProxyAuth(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// Act
 
-			observedUser, observedPass, observedAuth := parseBasicProxyAuth(tc.givenAuth)
+			observedAuth, expectedAuthOK := parseBasicProxyAuth(tc.givenAuth)
 
 			// Assert
 
-			assert.Equal(t, tc.expectedUser, observedUser)
-			assert.Equal(t, tc.expectedPass, observedPass)
 			assert.Equal(t, tc.expectedAuth, observedAuth)
+			assert.Equal(t, tc.expectedAuthOK, expectedAuthOK)
 		})
 	}
 }

@@ -21,24 +21,24 @@ import (
 
 // Proxy is a HTTPS forward proxy.
 type Proxy struct {
-	Logger              *zap.Logger
-	AuthUser            string
-	AuthPass            string
-	Avoid               string
-	ForwardingHTTPProxy *httputil.ReverseProxy
-	DestDialTimeout     time.Duration
-	DestReadTimeout     time.Duration
-	DestWriteTimeout    time.Duration
-	ClientReadTimeout   time.Duration
-	ClientWriteTimeout  time.Duration
+	Logger     *zap.Logger
+	Auth       string
+	Avoid      string
+	Forwarding *httputil.ReverseProxy
+
+	DestDialTimeout    time.Duration
+	DestReadTimeout    time.Duration
+	DestWriteTimeout   time.Duration
+	ClientReadTimeout  time.Duration
+	ClientWriteTimeout time.Duration
 }
 
 func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	p.Logger.Info("Incoming request", zap.String("host", r.Host))
 
-	if p.AuthUser != "" && p.AuthPass != "" {
-		user, pass, ok := parseBasicProxyAuth(r.Header.Get("Proxy-Authorization"))
-		if !ok || user != p.AuthUser || pass != p.AuthPass {
+	if p.Auth != "" {
+		pa := r.Header.Get("Proxy-Authorization")
+		if auth, ok := parseBasicProxyAuth(pa); !ok || auth != p.Auth {
 			p.Logger.Warn("Authorization attempt with invalid credentials")
 			http.Error(w, http.StatusText(http.StatusProxyAuthRequired), http.StatusProxyAuthRequired)
 			return
@@ -58,11 +58,10 @@ func (p *Proxy) handleHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusMethodNotAllowed)
 		return
 	}
-	p.ForwardingHTTPProxy.ServeHTTP(w, r)
+	p.Forwarding.ServeHTTP(w, r)
 }
 
 func (p *Proxy) handleTunneling(w http.ResponseWriter, r *http.Request) {
-
 	if p.Avoid != "" && strings.Contains(r.Host, p.Avoid) == true {
 		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusMethodNotAllowed)
 		return
@@ -115,14 +114,16 @@ func (p *Proxy) handleTunneling(w http.ResponseWriter, r *http.Request) {
 }
 
 func transfer(dest io.WriteCloser, src io.ReadCloser) {
-	defer func() { _ = dest.Close() }()
-	defer func() { _ = src.Close() }()
+	defer func() {
+		_ = dest.Close()
+		_ = src.Close()
+	}()
 	_, _ = io.Copy(dest, src)
 }
 
 // parseBasicProxyAuth parses an HTTP Basic Authorization string.
-// "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==" returns ("Aladdin", "open sesame", true).
-func parseBasicProxyAuth(authz string) (username, password string, ok bool) {
+// "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==" returns ("Aladdin:open sesame", true).
+func parseBasicProxyAuth(authz string) (auth string, ok bool) {
 	const prefix = "Basic "
 	if !strings.HasPrefix(authz, prefix) {
 		return
@@ -131,12 +132,7 @@ func parseBasicProxyAuth(authz string) (username, password string, ok bool) {
 	if err != nil {
 		return
 	}
-	cs := string(c)
-	s := strings.IndexByte(cs, ':')
-	if s < 0 {
-		return
-	}
-	return cs[:s], cs[s+1:], true
+	return string(c), true
 }
 
 // NewForwardingHTTPProxy retuns a new reverse proxy that takes an incoming
