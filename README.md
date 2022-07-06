@@ -6,77 +6,226 @@ originating requests to a destination service from a set of well-known IPs.
 ## Usage
 
 ```
-$ forwardingproxy -h
-Usage of forwardingproxy:
-  -addr string
-        Server address
-  -auth string
-        Server authentication username:password
-  -avoid string
-        Site to be avoided
-  -cert string
-        Filepath to certificate
-  -client.read.timeout duration
-        Client read timeout (default 5s)
-  -client.write.timeout duration
-        Client write timeout (default 5s)
-  -dest.dial.timeout duration
-        Destination dial timeout (default 10s)
-  -dest.read.timeout duration
-        Destination read timeout (default 5s)
-  -dest.write.timeout duration
-        Destination write timeout (default 5s)
-  -key string
-        Filepath to private key
-  -le
-        Use letsencrypt for https
-  -le.cache.dir string
-        Cache directory for certificates (default "/tmp")
-  -le.whitelist string
-        Hostname to whitelist for letsencrypt
-  -server.idle.timeout duration
-        Server idle timeout (default 30s)
-  -server.read.header.timeout duration
-        Server read header timeout (default 30s)
-  -server.read.timeout duration
-        Server read timeout (default 30s)
-  -server.write.timeout duration
-        Server write timeout (default 30s)
-  -verbose
-        Set log level to DEBUG
+$ fproxy -h
+Usage of fproxy:
+  -addr                       string  Server address (default ":0")
+  -auth                       string  Server authentication username:password
+  -avoid                      string Site to be avoided
+  -log                        string   Log level (default "info")
+
+  -ca                         string   Filepath to certificate and private key, like -ca cert.pem,key.pem
+
+  -le                                  Use letsencrypt for https
+  -le.cache.dir               string   Cache directory for certificates
+  -le.whitelist               string   Hostname to whitelist for letsencrypt (default "localhost")
+
+  -server.idle.timeout        duration Server idle timeout (default 30s)
+  -server.read.header.timeout duration Server read header timeout (default 30s)
+  -server.read.timeout        duration Server read timeout (default 30s)
+  -server.write.timeout       duration Server write timeout (default 30s)
+  -client.read.timeout        duration Client read timeout (default 5s)
+  -client.write.timeout       duration Client write timeout (default 5s)
+  -dest.dial.timeout          duration Destination dial timeout (default 10s)
+  -dest.read.timeout          duration Destination read timeout (default 5s)
+  -dest.write.timeout         duration Destination write timeout (default 5s)
 ```
 
-To start the proxy as HTTP server, just run:
-
-```
-$ forwardingproxy
-```
-
-To start the proxy as HTTPS server, just provide server certificate and private
-key files:
-
-```
-$ forwardingproxy -cert cert.pem -key key.pem
-```
-
-To create a self-signed certificate and private key for testing, run:
-
-```
-$ openssl req -newkey rsa:2048 -nodes -keyout key.pem -new -x509 -sha256 -days 3650 -out cert.pem
-
-```
-
-Or enable letsencrypt
-
-```
-$ forwardingproxy -le -le.whitelist proxy.somehostname.tld -le.cachedir /home/somewhere/.forwardingproxycache
-```
+1. To start the proxy as HTTP server, just run: `fproxy`
+2. To start the proxy as HTTPS server, just provide server certificate and private key
+   files: `fproxy -ca cert.pem,key.pem`
+3. To create a self-signed certificate and private key for testing,
+   run: `openssl req -newkey rsa:2048 -nodes -keyout key.pem -new -x509 -sha256 -days 3650 -out cert.pem`
+4. enable letsencrypt `fproxy -le -le.whitelist proxy.somehostname.tld -le.cachedir /home/somewhere/.fproxycache`
 
 The server can be configured to run on a specific interface and port (`-addr`),
 be protected via `Proxy-Authorization` (`-auth`). Additionally, most
 timeouts can be customized.
 
 To enable verbose logging output, use `-verbose` flag.
+
+## demo
+
+```sh
+$ fproxy
+{"level":"info","ts":"2022-07-06T09:35:04.196+0800","caller":"fproxy/main.go:191","msg":"Server starting","Listening":"[::]:54741"}
+{"level":"info","ts":"2022-07-06T09:36:18.941+0800","caller":"fproxy/proxy.go:37","msg":"Incoming request","host":"127.0.0.1:5003"}
+{"level":"info","ts":"2022-07-06T09:37:24.379+0800","caller":"fproxy/proxy.go:37","msg":"Incoming request","host":"127.0.0.1:5004"}
+```
+
+```sh
+$ gurl http://127.0.0.1:5003/v -proxy http://127.0.0.1:54741
+2022/07/06 09:36:18.940579 main.go:131: Proxy URL: http://127.0.0.1:54741/
+Conn-Session: 127.0.0.1:54927->127.0.0.1:54741 (reused: false, wasIdle: false, idle: 0s)
+GET /v HTTP/1.1
+Host: 127.0.0.1:5003
+Accept: application/json
+Accept-Encoding: gzip, deflate
+Content-Type: application/json
+Gurl-Date: Wed, 06 Jul 2022 01:36:18 GMT
+User-Agent: gurl/1.0.0
+
+
+HTTP/1.1 200 OK
+Vary: Accept-Encoding
+X-Forwarded-For: 127.0.0.1
+Content-Encoding: gzip
+Content-Length: 139
+Content-Type: application/json; charset=utf-8
+Date: Wed, 06 Jul 2022 01:36:18 GMT
+
+{
+  "build": "2022-06-28T15:38:41+0800",
+  "git": "master-b524d91@2022-06-28T15:38:05+08:00",
+  "go": "go1.18.3_darwin/amd64",
+  "version": "1.0.0"
+}
+
+   DNS Lookup   TCP Connection   Request Transfer   Server Processing   Response Transfer
+[       0 ms  |          0 ms  |            0 ms  |            0 ms  |             0 ms  ]
+              |                |                  |                  |                   |
+  namelookup: 0 ms             |                  |                  |                   |
+                      connect: 0 ms               |                  |                   |
+                                   wrote request: 0 ms               |                   |
+                                                      starttransfer: 1 ms                |
+                                                                                  total: 1 ms
+2022/07/06 09:36:18.942304 main.go:176: current request cost: 1.64843ms
+2022/07/06 09:36:18.942315 main.go:69: complete, total cost: 1.812369ms
+
+$ gurl https://127.0.0.1:5004/v -proxy http://127.0.0.1:54741 -i
+2022/07/06 09:37:24.379036 main.go:131: Proxy URL: http://127.0.0.1:54741/
+Conn-Session: 127.0.0.1:55092->127.0.0.1:54741 (reused: false, wasIdle: false, idle: 0s)
+GET /v HTTP/1.1
+Host: 127.0.0.1:5004
+Accept: application/json
+Accept-Encoding: gzip, deflate
+Content-Type: application/json
+Gurl-Date: Wed, 06 Jul 2022 01:37:24 GMT
+User-Agent: gurl/1.0.0
+
+
+HTTP/1.1 200 OK
+Date: Wed, 06 Jul 2022 01:37:24 GMT
+Content-Length: 139
+Content-Encoding: gzip
+Content-Type: application/json; charset=utf-8
+Vary: Accept-Encoding
+
+{
+  "build": "2022-06-28T15:38:41+0800",
+  "git": "master-b524d91@2022-06-28T15:38:05+08:00",
+  "go": "go1.18.3_darwin/amd64",
+  "version": "1.0.0"
+}
+
+  DNS Lookup   TCP Connection   TLS Handshake   Request Transfer   Server Processing   Response Transfer
+[      0 ms  |          0 ms  |         2 ms  |           0 ms  |             0 ms  |            0 ms  ]
+             |                |               |                 |                   |                  |
+ namelookup: 0 ms             |               |                 |                   |                  |
+                     connect: 0 ms            |                 |                   |                  |
+                                 pretransfer: 2 ms              |                   |                  |
+                                                 wrote request: 2 ms                |                  |
+                                                                     starttransfer: 3 ms               |
+                                                                                                total: 3 ms
+2022/07/06 09:37:24.382855 main.go:176: current request cost: 3.742847ms
+2022/07/06 09:37:24.382869 main.go:69: complete, total cost: 3.918938ms
+```
+
+Can use httplive to create localhost.pem and localhost.key for demo
+
+```sh
+$ httplive -k -l
+2022-07-06 09:57:51.294 [INFO ] 6837 --- [1    ] [-]  : log file created: /Users/bingoobjca/logs/b/httplive.log
+2022-07-06 09:57:52.400 [INFO ] 6837 --- [1    ] [-]  : Created a new local CA ✅
+2022-07-06 09:57:52.574 [INFO ] 6837 --- [1    ] [-]  : Created a new certificate valid for the name - "localhost" 📜
+2022-07-06 09:57:52.574 [INFO ] 6837 --- [1    ] [-]  : The certificate is at ".cert/localhost.pem" and the key at ".cert/localhost.key" ✅
+2022-07-06 09:57:52.574 [INFO ] 6837 --- [1    ] [-]  : The certificate will expire at 2024-07-06 01:57:52 🗓
+```
+
+```sh
+$ fproxy -ca localhost.pem,localhost.key
+{"level":"info","ts":"2022-07-06T09:38:33.450+0800","caller":"fproxy/main.go:175","msg":"Server starting","Listening":"[::]:55254"}
+{"level":"info","ts":"2022-07-06T09:38:58.283+0800","caller":"fproxy/proxy.go:37","msg":"Incoming request","host":"127.0.0.1:5003"}
+{"level":"info","ts":"2022-07-06T09:39:45.639+0800","caller":"fproxy/proxy.go:37","msg":"Incoming request","host":"127.0.0.1:5004"}
+```
+
+```sh
+$ gurl http://127.0.0.1:5003/v -proxy https://127.0.0.1:55254 -i
+2022/07/06 09:38:58.280752 main.go:131: Proxy URL: https://127.0.0.1:55254/
+Conn-Session: 127.0.0.1:55314->127.0.0.1:55254 (reused: false, wasIdle: false, idle: 0s)
+GET /v HTTP/1.1
+Host: 127.0.0.1:5003
+Accept: application/json
+Accept-Encoding: gzip, deflate
+Content-Type: application/json
+Gurl-Date: Wed, 06 Jul 2022 01:38:58 GMT
+User-Agent: gurl/1.0.0
+
+
+HTTP/1.1 200 OK
+Date: Wed, 06 Jul 2022 01:38:58 GMT
+Vary: Accept-Encoding
+X-Forwarded-For: 127.0.0.1
+Content-Encoding: gzip
+Content-Length: 139
+Content-Type: application/json; charset=utf-8
+
+{
+  "build": "2022-06-28T15:38:41+0800",
+  "git": "master-b524d91@2022-06-28T15:38:05+08:00",
+  "go": "go1.18.3_darwin/amd64",
+  "version": "1.0.0"
+}
+
+   DNS Lookup   TCP Connection   Request Transfer   Server Processing   Response Transfer
+[       0 ms  |          2 ms  |            0 ms  |            1 ms  |             0 ms  ]
+              |                |                  |                  |                   |
+  namelookup: 0 ms             |                  |                  |                   |
+                      connect: 2 ms               |                  |                   |
+                                   wrote request: 2 ms               |                   |
+                                                      starttransfer: 3 ms                |
+                                                                                  total: 3 ms
+2022/07/06 09:38:58.284910 main.go:176: current request cost: 4.083942ms
+2022/07/06 09:38:58.284922 main.go:69: complete, total cost: 4.253366ms
+
+$ gurl https://127.0.0.1:5004/v -proxy https://127.0.0.1:55254 -i
+2022/07/06 09:39:45.636832 main.go:131: Proxy URL: https://127.0.0.1:55254/
+Conn-Session: 127.0.0.1:55427->127.0.0.1:55254 (reused: false, wasIdle: false, idle: 0s)
+GET /v HTTP/1.1
+Host: 127.0.0.1:5004
+Accept: application/json
+Accept-Encoding: gzip, deflate
+Content-Type: application/json
+Gurl-Date: Wed, 06 Jul 2022 01:39:45 GMT
+User-Agent: gurl/1.0.0
+
+
+HTTP/1.1 200 OK
+Content-Encoding: gzip
+Content-Type: application/json; charset=utf-8
+Vary: Accept-Encoding
+Date: Wed, 06 Jul 2022 01:39:45 GMT
+Content-Length: 139
+
+{
+  "build": "2022-06-28T15:38:41+0800",
+  "git": "master-b524d91@2022-06-28T15:38:05+08:00",
+  "go": "go1.18.3_darwin/amd64",
+  "version": "1.0.0"
+}
+
+  DNS Lookup   TCP Connection   TLS Handshake   Request Transfer   Server Processing   Response Transfer
+[      0 ms  |          0 ms  |         2 ms  |           0 ms  |             0 ms  |            0 ms  ]
+             |                |               |                 |                   |                  |
+ namelookup: 0 ms             |               |                 |                   |                  |
+                     connect: 0 ms            |                 |                   |                  |
+                                 pretransfer: 5 ms              |                   |                  |
+                                                 wrote request: 5 ms                |                  |
+                                                                     starttransfer: 5 ms               |
+                                                                                                total: 6 ms
+2022/07/06 09:39:45.643151 main.go:176: current request cost: 6.237827ms
+2022/07/06 09:39:45.643161 main.go:69: complete, total cost: 6.415185ms
+```
+
 
 ## Implementation details
 

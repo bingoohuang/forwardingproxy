@@ -1,4 +1,4 @@
-module forwardingproxy
+module fproxy
 
 go 1.18
 

@@ -6,11 +6,14 @@ import (
 	"context"
 	"crypto/tls"
 	"flag"
+	"fmt"
+	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"time"
 
 	"go.uber.org/zap"
@@ -19,12 +22,11 @@ import (
 )
 
 var (
-	pCertPath = flag.String("cert", "", "Filepath to certificate")
-	pKeyPath  = flag.String("key", "", "Filepath to private key")
-	pAddr     = flag.String("addr", ":0", "Server address")
-	pAuth     = flag.String("auth", "", "Server authentication username:password")
-	pAvoid    = flag.String("avoid", "", "Site to be avoided")
-	pLog      = flag.String("log", "info", "Log level")
+	pCaPath = flag.String("ca", "", "Filepath to certificate and private key, like -ca cert.pem,key.pem")
+	pAddr   = flag.String("addr", ":0", "Server address")
+	pAuth   = flag.String("auth", "", "Server authentication username:password")
+	pAvoid  = flag.String("avoid", "", "Site to be avoided")
+	pLog    = flag.String("log", "info", "Log level")
 
 	pDestDialTimeout         = flag.Duration("dest.dial.timeout", 10*time.Second, "Destination dial timeout")
 	pDestReadTimeout         = flag.Duration("dest.read.timeout", 5*time.Second, "Destination read timeout")
@@ -37,11 +39,35 @@ var (
 	pServerIdleTimeout       = flag.Duration("server.idle.timeout", 30*time.Second, "Server idle timeout")
 
 	pLetsEncrypt = flag.Bool("le", false, "Use letsencrypt for https")
-	pLEWhitelist = flag.String("le.whitelist", "", "Hostname to whitelist for letsencrypt")
-	pLECacheDir  = flag.String("le.cache.dir", "/tmp", "Cache directory for certificates")
+	pLEWhitelist = flag.String("le.whitelist", "f.cn", "Hostname to whitelist for letsencrypt")
+	pLECacheDir  = flag.String("le.cache.dir", "", "Cache directory for certificates")
 )
 
 func main() {
+	flag.Usage = func() {
+		fmt.Print(`Usage of fproxy:
+  -addr                       string  Server address (default ":0")
+  -auth                       string  Server authentication username:password
+  -avoid                      string Site to be avoided
+  -log                        string   Log level (default "info")
+ 
+  -ca                         string   Filepath to certificate and private key, like -ca cert.pem,key.pem
+
+  -le                                  Use letsencrypt for https
+  -le.cache.dir               string   Cache directory for certificates
+  -le.whitelist               string   Hostname to whitelist for letsencrypt (default "localhost")
+  
+  -server.idle.timeout        duration Server idle timeout (default 30s)
+  -server.read.header.timeout duration Server read header timeout (default 30s)
+  -server.read.timeout        duration Server read timeout (default 30s)
+  -server.write.timeout       duration Server write timeout (default 30s)
+  -client.read.timeout        duration Client read timeout (default 5s)
+  -client.write.timeout       duration Client write timeout (default 5s)
+  -dest.dial.timeout          duration Destination dial timeout (default 10s)
+  -dest.read.timeout          duration Destination read timeout (default 5s)
+  -dest.write.timeout         duration Destination write timeout (default 5s)
+`)
+	}
 	flag.Parse()
 
 	c := zap.NewProductionConfig()
@@ -87,8 +113,9 @@ func main() {
 		if *pLEWhitelist == "" {
 			p.Logger.Fatal("error: no -le.whitelist flag set")
 		}
-		if *pLECacheDir == "/tmp" {
-			p.Logger.Info("-le.cache.dir should be set, using '/tmp' for now...")
+		if *pLECacheDir == "" {
+			*pLECacheDir, err = ioutil.TempDir("/tmp", "letsencrypt")
+			p.Logger.Info("Cache temp directory for certificates", zap.String("letsEncryptCacheDir", *pLECacheDir))
 		}
 
 		m := &autocert.Manager{
@@ -97,7 +124,6 @@ func main() {
 			HostPolicy: autocert.HostWhitelist(*pLEWhitelist),
 		}
 
-		s.Addr = ":https"
 		s.TLSConfig = m.TLSConfig()
 	}
 
@@ -115,10 +141,16 @@ func main() {
 	}()
 
 	var svrErr error
-	if *pCertPath != "" && *pKeyPath != "" || *pLetsEncrypt {
-		svrErr = ListenAndServeTLS(s, *pCertPath, *pKeyPath, p.Logger)
+	if *pCaPath != "" {
+		ps := strings.SplitN(*pCaPath, ",", 2)
+		if len(ps) != 2 {
+			log.Fatalf("invalid flags, e.g. -ca cert.pem,key.pem")
+		}
+		svrErr = listenAndServeTLS(s, ps[0], ps[1], p.Logger)
+	} else if *pLetsEncrypt {
+		svrErr = listenAndServeTLS(s, "", "", p.Logger)
 	} else {
-		svrErr = ListenAndServe(s, p.Logger)
+		svrErr = listenAndServe(s, p.Logger)
 	}
 
 	if svrErr != http.ErrServerClosed {
@@ -129,7 +161,7 @@ func main() {
 	p.Logger.Info("Server stopped")
 }
 
-func ListenAndServeTLS(srv *http.Server, certFile, keyFile string, logger *zap.Logger) error {
+func listenAndServeTLS(srv *http.Server, certFile, keyFile string, logger *zap.Logger) error {
 	addr := srv.Addr
 	if addr == "" {
 		addr = ":https"
@@ -146,7 +178,7 @@ func ListenAndServeTLS(srv *http.Server, certFile, keyFile string, logger *zap.L
 	return srv.ServeTLS(ln, certFile, keyFile)
 }
 
-func ListenAndServe(srv *http.Server, logger *zap.Logger) error {
+func listenAndServe(srv *http.Server, logger *zap.Logger) error {
 	addr := srv.Addr
 	if addr == "" {
 		addr = ":http"
@@ -156,6 +188,8 @@ func ListenAndServe(srv *http.Server, logger *zap.Logger) error {
 		return err
 	}
 	logger.Info("Server starting", zap.String("Listening", ln.Addr().String()))
+
+	defer ln.Close()
 
 	return srv.Serve(ln)
 }
