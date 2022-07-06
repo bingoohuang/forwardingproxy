@@ -137,7 +137,7 @@ func parseBasicProxyAuth(authz string) (auth string, ok bool) {
 	return string(c), true
 }
 
-// NewForwardingHTTPProxy retuns a new reverse proxy that takes an incoming
+// NewForwardingHTTPProxy returns a new reverse proxy that takes an incoming
 // request and sends it to another server, proxying the response back to the
 // client.
 //
