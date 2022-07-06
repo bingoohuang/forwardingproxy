@@ -5,7 +5,7 @@ originating requests to a destination service from a set of well-known IPs.
 
 ## Usage
 
-```
+```sh
 $ fproxy -h
 Usage of fproxy:
   -addr                       string  Server address (default ":0")
@@ -355,3 +355,40 @@ Presented code is not a production-grade solution. It lacks e.g.
 handling [hop-by-hop headers](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers#hbh), setting up timeouts while
 copying data between two connections or the ones exposed by net/http — more on this in “[The complete guide to Go
 net/http timeouts](https://blog.cloudflare.com/the-complete-guide-to-golang-net-http-timeouts/)”.
+
+### Go net/http timesouts
+
+Server Timeouts
+
+![Server Timeouts](_assets/2022-07-06-10-17-09.png)
+
+There are three main timeouts exposed in http.Server: ReadTimeout, WriteTimeout and IdleTimeout. You set them by explicitly using a Server:
+
+```go
+srv := &http.Server{
+    ReadTimeout:  5 * time.Second,
+    WriteTimeout: 10 * time.Second,
+    IdleTimeout:  120 * time.Second,
+    TLSConfig:    tlsConfig,
+    Handler:      serveMux,
+}
+log.Println(srv.ListenAndServeTLS("", ""))
+```
+
+Client Timeouts
+
+![Client Timeouts](_assets/2022-07-06-10-19-08.png)
+
+```go
+c := &http.Client{
+    Transport: &http.Transport{
+        Dial: (&net.Dialer{
+                Timeout:   30 * time.Second,
+                KeepAlive: 30 * time.Second,
+        }).Dial,
+        TLSHandshakeTimeout:   10 * time.Second,
+        ResponseHeaderTimeout: 10 * time.Second,
+        ExpectContinueTimeout: 1 * time.Second,
+    }
+}
+```
