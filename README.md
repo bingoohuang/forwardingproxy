@@ -12,13 +12,10 @@ Usage of fproxy:
   -auth                       string  Server authentication username:password
   -avoid                      string Site to be avoided
   -log                        string   Log level (default "info")
-
   -ca                         string   Filepath to certificate and private key, like -ca cert.pem,key.pem
-
   -le                                  Use letsencrypt for https
   -le.cache.dir               string   Cache directory for certificates
   -le.whitelist               string   Hostname to whitelist for letsencrypt (default "localhost")
-
   -server.idle.timeout        duration Server idle timeout (default 30s)
   -server.read.header.timeout duration Server read header timeout (default 30s)
   -server.read.timeout        duration Server read timeout (default 30s)
@@ -30,12 +27,9 @@ Usage of fproxy:
   -dest.write.timeout         duration Destination write timeout (default 5s)
 ```
 
-1. To start the proxy as HTTP server, just run: `fproxy`
-2. To start the proxy as HTTPS server, just provide server certificate and private key
-   files: `fproxy -ca cert.pem,key.pem`
-3. To create a self-signed certificate and private key for testing,
-   run: `openssl req -newkey rsa:2048 -nodes -keyout key.pem -new -x509 -sha256 -days 3650 -out cert.pem`
-4. enable letsencrypt `fproxy -le -le.whitelist proxy.somehostname.tld -le.cachedir /home/somewhere/.fproxycache`
+1. Proxy as HTTP server: fproxy
+2. Proxy as HTTPS server: fproxy -ca cert.pem,key.pem
+3. Enable Lets Encrypt `fproxy -le -le.whitelist proxy.somehostname.tld -le.cachedir /somewhere/.fproxycache`
 
 The server can be configured to run on a specific interface and port (`-addr`),
 be protected via `Proxy-Authorization` (`-auth`). Additionally, most

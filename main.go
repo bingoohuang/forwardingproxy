@@ -22,12 +22,11 @@ import (
 )
 
 var (
-	pCaPath = flag.String("ca", "", "Filepath to certificate and private key, like -ca cert.pem,key.pem")
-	pAddr   = flag.String("addr", ":0", "Server address")
-	pAuth   = flag.String("auth", "", "Server authentication username:password")
-	pAvoid  = flag.String("avoid", "", "Site to be avoided")
-	pLog    = flag.String("log", "info", "Log level")
-
+	pCaPath                  = flag.String("ca", "", "Filepath to certificate and private key, like -ca cert.pem,key.pem")
+	pAddr                    = flag.String("addr", ":0", "Server address")
+	pAuth                    = flag.String("auth", "", "Server authentication username:password")
+	pAvoid                   = flag.String("avoid", "", "Site to be avoided")
+	pLog                     = flag.String("log", "info", "Log level")
 	pDestDialTimeout         = flag.Duration("dest.dial.timeout", 10*time.Second, "Destination dial timeout")
 	pDestReadTimeout         = flag.Duration("dest.read.timeout", 5*time.Second, "Destination read timeout")
 	pDestWriteTimeout        = flag.Duration("dest.write.timeout", 5*time.Second, "Destination write timeout")
@@ -37,10 +36,9 @@ var (
 	pServerReadHeaderTimeout = flag.Duration("server.read.header.timeout", 30*time.Second, "Server read header timeout")
 	pServerWriteTimeout      = flag.Duration("server.write.timeout", 30*time.Second, "Server write timeout")
 	pServerIdleTimeout       = flag.Duration("server.idle.timeout", 30*time.Second, "Server idle timeout")
-
-	pLetsEncrypt = flag.Bool("le", false, "Use letsencrypt for https")
-	pLEWhitelist = flag.String("le.whitelist", "f.cn", "Hostname to whitelist for letsencrypt")
-	pLECacheDir  = flag.String("le.cache.dir", "", "Cache directory for certificates")
+	pLetsEncrypt             = flag.Bool("le", false, "Use letsencrypt for https")
+	pLEWhitelist             = flag.String("le.whitelist", "f.cn", "Hostname to whitelist for letsencrypt")
+	pLECacheDir              = flag.String("le.cache.dir", "", "Cache directory for certificates")
 )
 
 func main() {
@@ -50,13 +48,10 @@ func main() {
   -auth                       string  Server authentication username:password
   -avoid                      string Site to be avoided
   -log                        string   Log level (default "info")
- 
   -ca                         string   Filepath to certificate and private key, like -ca cert.pem,key.pem
-
   -le                                  Use letsencrypt for https
   -le.cache.dir               string   Cache directory for certificates
   -le.whitelist               string   Hostname to whitelist for letsencrypt (default "localhost")
-  
   -server.idle.timeout        duration Server idle timeout (default 30s)
   -server.read.header.timeout duration Server read header timeout (default 30s)
   -server.read.timeout        duration Server read timeout (default 30s)
