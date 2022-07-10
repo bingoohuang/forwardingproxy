@@ -386,3 +386,8 @@ c := &http.Client{
     }
 }
 ```
+
+## Resources
+
+1. [sipt/shuttle](https://github.com/sipt/shuttle) A web proxy in Golang with amazing features.
+2. HTTP proxy written in Go. [COW](https://github.com/cyfdecyf/cow) can automatically identify blocked sites and use parent proxies to access.
