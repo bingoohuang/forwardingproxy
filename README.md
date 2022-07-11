@@ -317,13 +317,23 @@ used as HTTP cache. Squid and TinyProxy are closest to be working as forwarding
 proxies, however it can be difficult to set them up on a new Amazon Linux 2 AMI
 EC2 instance, and TinyProxy is not maintained anymore since several years.
 
-## License
+## HTTP 代理
 
-MIT License.
+代理是网络中的一项重要的功能，其功能就是代理网络用户去取得网络信息。形象的说：它是网络信息的中转站，对于客户端来说，代理扮演的是服务器的角色，接收请求报文，返回响应报文；对于web服务器来说，代理扮演的是客户端的角色，发送请求报文，接收响应报文。
 
-## HTTP(S) Proxy in Golang in less than 100 lines of code
+代理具有多种类型，如果是根据网络用户划分的话，可以划分为正向代理和反向代理：
 
-[blog](https://medium.com/@mlowicki/http-s-proxy-in-golang-in-less-than-100-lines-of-code-6a51c2f2c38c)
+1. 正向代理：将客户端作为网络用户。客户端访问服务端时，先访问代理服务器，随后代理服务器再访问服务端。此过程需客户端进行代理配置，对服务端透明。
+2. 反向代理：将服务端作为网络用户。访问过程与正向代理相同，不过此过程对客户端透明，需服务端进行代理配置（也可不配置）。
+
+针对正向代理和反向代理，分别有不同的代理协议，即代理服务器和网络用户之间通信所使用的协议：
+
+正向代理： http https socks4 socks5 vpn：就功能而言，vpn也可以被认为是代理
+反向代理： tcp udp http https
+
+HTTP 代理是正向代理中较为简单的代理方式，它使用 HTTP 协议作为客户端和代理服务器的传输协议。
+
+HTTP 代理可以承载 HTTP 协议，HTTPS 协议，FTP 协议等等。对于不同的协议，客户端和代理服务器间的数据格式略有不同。
 
 ### HTTP Forwarding Proxy
 
@@ -392,6 +402,8 @@ destination server so these two parties can establish secure connection.
     x                        :
 ```
 
+由于 HTTPS 下客户端和服务端的通信除了开头的协商以外都是密文，中间的代理服务器不再承担修改 HTTPS 报文再转发的功能，而是一开始就和客户端协商好服务端的地址，随后的 TCP 密文直接转发即可。
+
 ![通过 HTTPS Proxy ，客户端和服务器直接创建了一个 tunnel](_assets/2022-07-02-09-10-15.png)
 
 Presented code is not a production-grade solution. It lacks e.g.
@@ -439,6 +451,8 @@ ExpectContinueTimeout: 1 * time.Second,
 
 ## Resources
 
-1. [sipt/shuttle](https://github.com/sipt/shuttle) A web proxy in Golang with amazing features.
-2. HTTP proxy written in Go. [COW](https://github.com/cyfdecyf/cow) can automatically identify blocked sites and use
+1. [golang实现一个简单的http代理](https://blog.51cto.com/u_15127596/3297318)
+2. [sipt/shuttle](https://github.com/sipt/shuttle) A web proxy in Golang with amazing features.
+3. HTTP proxy written in Go. [COW](https://github.com/cyfdecyf/cow) can automatically identify blocked sites and use
    parent proxies to access.
+4. HTTP(S) Proxy in Golang in less than 100 lines of code [blog](https://medium.com/@mlowicki/http-s-proxy-in-golang-in-less-than-100-lines-of-code-6a51c2f2c38c)

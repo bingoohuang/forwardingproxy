@@ -84,8 +84,6 @@ func (p *Proxy) handleTunneling(w http.ResponseWriter, r *http.Request) {
 
 	p.Logger.Debug("Connected", zap.String("host", r.Host))
 
-	w.WriteHeader(http.StatusOK)
-
 	p.Logger.Debug("Hijacking", zap.String("host", r.Host))
 
 	// Hijacker interface allows to take over the connection. After that the caller is
@@ -102,6 +100,8 @@ func (p *Proxy) handleTunneling(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		return
 	}
+
+	clientConn.Write([]byte("HTTP/1.1 200 Connection established\r\n\r\n"))
 
 	p.Logger.Debug("Hijacked connection", zap.String("host", r.Host))
 
