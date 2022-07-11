@@ -12,7 +12,7 @@ Usage of fproxy:
   -auth                       string  Server authentication username:password
   -avoid                      string Site to be avoided
   -log                        string   Log level (default "info")
-  -ca                         string   Filepath to certificate and private key, like -ca cert.pem,key.pem
+  -ca                         string   Filepath to certificate and private key, like -ca cert.pem,key.pem ()
   -le                                  Use letsencrypt for https
   -le.cache.dir               string   Cache directory for certificates
   -le.whitelist               string   Hostname to whitelist for letsencrypt (default "localhost")

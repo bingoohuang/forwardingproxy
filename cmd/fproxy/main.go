@@ -7,6 +7,7 @@ import (
 	"crypto/tls"
 	"flag"
 	"fmt"
+	"github.com/bingoohuang/fproxy"
 	"io/ioutil"
 	"log"
 	"net"
@@ -48,7 +49,7 @@ func main() {
   -auth                       string  Server authentication username:password
   -avoid                      string Site to be avoided
   -log                        string   Log level (default "info")
-  -ca                         string   Filepath to certificate and private key, like -ca cert.pem,key.pem
+  -ca                         string   Filepath to certificate and private key, like -ca cert.pem,key.pem (This will enable https proxy)
   -le                                  Use letsencrypt for https
   -le.cache.dir               string   Cache directory for certificates
   -le.whitelist               string   Hostname to whitelist for letsencrypt (default "localhost")
@@ -81,8 +82,8 @@ func main() {
 	defer logger.Sync()
 	stdLogger := zap.NewStdLog(logger)
 
-	p := &Proxy{
-		Forwarding:         NewForwardingHTTPProxy(stdLogger),
+	p := &fproxy.Proxy{
+		Forwarding:         fproxy.NewForwardingHTTPProxy(stdLogger),
 		Logger:             logger,
 		Auth:               *pAuth,
 		DestDialTimeout:    *pDestDialTimeout,
@@ -162,15 +163,23 @@ func listenAndServeTLS(srv *http.Server, certFile, keyFile string, logger *zap.L
 		addr = ":https"
 	}
 
-	ln, err := net.Listen("tcp", addr)
+	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
 	if err != nil {
 		return err
 	}
-	logger.Info("Server starting", zap.String("Listening", ln.Addr().String()))
 
-	defer ln.Close()
+	l, err := fproxy.NewHttpsListener(addr, cert)
+	if err != nil {
+		return err
+	}
 
-	return srv.ServeTLS(ln, certFile, keyFile)
+	defer l.Close()
+
+	logger.Info("http/https server starting", zap.String("Listening", l.Addr().String()))
+	_, port, _ := net.SplitHostPort(l.Addr().String())
+	logger.Info(fmt.Sprintf("settings: export http_proxy=http://127.0.0.1:%s; export https_proxy=http://127.0.0.1:%s", port, port))
+	logger.Info(fmt.Sprintf("or      : export http_proxy=https://127.0.0.1:%s; export https_proxy=https://127.0.0.1:%s", port, port))
+	return srv.Serve(l)
 }
 
 func listenAndServe(srv *http.Server, logger *zap.Logger) error {
@@ -178,13 +187,15 @@ func listenAndServe(srv *http.Server, logger *zap.Logger) error {
 	if addr == "" {
 		addr = ":http"
 	}
-	ln, err := net.Listen("tcp", addr)
+	l, err := net.Listen("tcp", addr)
 	if err != nil {
 		return err
 	}
-	logger.Info("Server starting", zap.String("Listening", ln.Addr().String()))
+	defer l.Close()
 
-	defer ln.Close()
+	logger.Info("http server starting", zap.String("Listening", l.Addr().String()))
+	_, port, _ := net.SplitHostPort(l.Addr().String())
+	logger.Info(fmt.Sprintf("settings: export http_proxy=http://127.0.0.1:%s; export https_proxy=http://127.0.0.1:%s", port, port))
 
-	return srv.Serve(ln)
+	return srv.Serve(l)
 }

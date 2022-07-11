@@ -1,6 +1,6 @@
 // Copyright (C) 2018 Betalo AB - All Rights Reserved
 
-package main
+package fproxy
 
 import (
 	"fmt"

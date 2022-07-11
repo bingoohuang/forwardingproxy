@@ -4,7 +4,7 @@
 
 // $ openssl req -newkey rsa:2048 -nodes -keyout server.key -new -x509 -sha256 -days 3650 -out server.pem
 
-package main
+package fproxy
 
 import (
 	"encoding/base64"

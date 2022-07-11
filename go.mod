@@ -1,4 +1,4 @@
-module fproxy
+module github.com/bingoohuang/fproxy
 
 go 1.18
 
