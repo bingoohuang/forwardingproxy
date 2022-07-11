@@ -220,7 +220,6 @@ Content-Length: 139
 2022/07/06 09:39:45.643161 main.go:69: complete, total cost: 6.415185ms
 ```
 
-
 ## Implementation details
 
 It is a simple HTTPS tunneling proxy that starts a Go HTTPS server at a given
@@ -326,12 +325,33 @@ MIT License.
 
 [blog](https://medium.com/@mlowicki/http-s-proxy-in-golang-in-less-than-100-lines-of-code-6a51c2f2c38c)
 
-### HTTP
+### HTTP Forwarding Proxy
+
+HTTP Proxy 如同一个中间人
+
+客户端浏览器向它发起 TCP 连接，并把实际需要访问的 web service 放在 GET 和 HOST HTTP header 中。
+它收到请求后，解析 HTTP header，并向真正的 web service 发起请求。
+稍后它再将 web service 返回的内容返回至客户端。
+在上述这个过程中，HTTP Proxy 同时维持了2个 TCP 连接。因为它非常清楚地知道客户端和服务端之间的对话内容，所以带来了安全隐患。
+另外有些无良的 Proxy 还会自己往服务端所返回的 HTML 页面里面添加烦人的广告。
+
+```sh
++--------+             +-------+             +-------------+
+| Client |             | Proxy |             | Destination |
++--------+             +-------+             +-------------+
+    |   1. HTTP Request    |                       |
+    | -------------------> |   2. HTTP Request     |
+    |                      | --------------------> |
+    |                      |   3. HTTP Response    |
+    |   4. HTTP Response   | <-------------------- |
+    | <------------------- |                       x
+    x                      :
+```
 
 To support HTTP we’ll use built-in HTTP server and client. The role of proxy is to handle HTTP request, pass such
 request to destination server and send response back to the client.
 
-![img.png](_assets/img.png)
+![img.png](_assets/2022-07-02-09-09-16.png)
 
 ### HTTP CONNECT tunneling
 
@@ -343,7 +363,36 @@ method. It tells the proxy server to establish TCP connection with destination s
 stream to and from the client. This way proxy server won’t terminate SSL but will simply pass data between client and
 destination server so these two parties can establish secure connection.
 
-![img.png](_assets/img02.png)
+```sh
+> CONNECT example.host.com:443 HTTP/1.1
+> Host: example.host.com:443
+> Proxy-Authorization: Basic base64-encoded-proxy-credentials
+> Proxy-Connection: Keep-Alive
+< HTTP/1.1 200 OK
+> GET /foo/bar?baz#qux HTTP/1.1
+> Host: example.host.com
+> Authorization: Basic base64-encoded-destination-credentials
+< HTTP/1.1 200 OK
+< Connection: close
++--------+              +-------+             +-------------+
+| Client |              | Proxy |             | Destination |
++--------+              +-------+             +-------------+
+    |   1. HTTP/S CONNECT    |                       |
+    | ---------------------> |   2. TLS handshake    |
+    |                        | --------------------> |
+    |                        |   3. Established      |
+    |   4. HTTP/S 200 OK     | <-------------------- |
+    | <--------------------- |                       |
+    |   5. HTTPS Request     |                       |
+    | ---------------------> |   6. TCP stream       |
+    |                        | --------------------> |
+    |                        |   7. TCP stream       |
+    |   8. HTTPS Response    | <-------------------- |
+    | <--------------------- |                       x
+    x                        :
+```
+
+![通过 HTTPS Proxy ，客户端和服务器直接创建了一个 tunnel](_assets/2022-07-02-09-10-15.png)
 
 Presented code is not a production-grade solution. It lacks e.g.
 handling [hop-by-hop headers](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers#hbh), setting up timeouts while
@@ -356,15 +405,16 @@ Server Timeouts
 
 ![Server Timeouts](_assets/2022-07-06-10-17-09.png)
 
-There are three main timeouts exposed in http.Server: ReadTimeout, WriteTimeout and IdleTimeout. You set them by explicitly using a Server:
+There are three main timeouts exposed in http.Server: ReadTimeout, WriteTimeout and IdleTimeout. You set them by
+explicitly using a Server:
 
 ```go
 srv := &http.Server{
-    ReadTimeout:  5 * time.Second,
-    WriteTimeout: 10 * time.Second,
-    IdleTimeout:  120 * time.Second,
-    TLSConfig:    tlsConfig,
-    Handler:      serveMux,
+ReadTimeout:  5 * time.Second,
+WriteTimeout: 10 * time.Second,
+IdleTimeout:  120 * time.Second,
+TLSConfig:    tlsConfig,
+Handler:      serveMux,
 }
 log.Println(srv.ListenAndServeTLS("", ""))
 ```
@@ -375,19 +425,20 @@ Client Timeouts
 
 ```go
 c := &http.Client{
-    Transport: &http.Transport{
-        Dial: (&net.Dialer{
-                Timeout:   30 * time.Second,
-                KeepAlive: 30 * time.Second,
-        }).Dial,
-        TLSHandshakeTimeout:   10 * time.Second,
-        ResponseHeaderTimeout: 10 * time.Second,
-        ExpectContinueTimeout: 1 * time.Second,
-    }
+Transport: &http.Transport{
+Dial: (&net.Dialer{
+Timeout:   30 * time.Second,
+KeepAlive: 30 * time.Second,
+}).Dial,
+TLSHandshakeTimeout:   10 * time.Second,
+ResponseHeaderTimeout: 10 * time.Second,
+ExpectContinueTimeout: 1 * time.Second,
+}
 }
 ```
 
 ## Resources
 
 1. [sipt/shuttle](https://github.com/sipt/shuttle) A web proxy in Golang with amazing features.
-2. HTTP proxy written in Go. [COW](https://github.com/cyfdecyf/cow) can automatically identify blocked sites and use parent proxies to access.
+2. HTTP proxy written in Go. [COW](https://github.com/cyfdecyf/cow) can automatically identify blocked sites and use
+   parent proxies to access.
