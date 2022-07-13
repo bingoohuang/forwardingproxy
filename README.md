@@ -402,6 +402,21 @@ destination server so these two parties can establish secure connection.
     x                        :
 ```
 
+时代在变，技术在变，需求也在变。如今放眼望去，大部分网站都在使用 HTTPS 。这个时候再使用 HTTP Proxy 的话，就会出现一个问题：只有 Proxy 能看到 web service 的证书，但客户端却只能接收到 Proxy 的证书。很明显，Proxy 证书里面的名字和客户端所想要访问的地址完全不同，这个时候浏览器会毫不留情地给出一个警告，TLS handshake 也没法通过。
+
+为了解决这个问题，HTTPS Proxy 应运而生。图 2 展示了它的工作流程。
+
+1. ① 客户端浏览器首先向 HTTPS Proxy 发起 TCP 连接，但在 HTTP 请求里，用的是 CONNECT 方法。
+2. ② HTTPS Proxy 收到这个连接后，利用 CONNECT 请求里面的数据，向 google.com 发起 TCP 连接。
+3. ③ 从此以后 HTTPS Proxy 只负责 relay 客户端和 google.com 之间的数据，不会做任何解析，也没有办法解析，因为它根本没有参与 TLS handshake 这个过程。它所 relay 的数据包括：TLS handshake 数据包(如证书、加密算法、加密秘钥等)、加密过之后的HTTP payload。
+
+在步骤 ③ 这里，HTTPS Proxy 通过对客户端及服务端会话数据的透明转发，实现了 tunnel 的效果。
+![](_assets/2022-07-13-13-54-04.png)
+
+图 2：通过 HTTPS Proxy ，客户端和服务器直接创建了一个 tunnel
+
+需要强调的是上述过程中，浏览器从始至终都没有和 google.com 发起直接的TCP连接，通信双方所有的数据都是经过 HTTPS Proxy中转的。
+
 由于 HTTPS 下客户端和服务端的通信除了开头的协商以外都是密文，中间的代理服务器不再承担修改 HTTPS 报文再转发的功能，而是一开始就和客户端协商好服务端的地址，随后的 TCP 密文直接转发即可。
 
 ![通过 HTTPS Proxy ，客户端和服务器直接创建了一个 tunnel](_assets/2022-07-02-09-10-15.png)
