@@ -40,6 +40,32 @@ To enable verbose logging output, use `-verbose` flag.
 ## demo
 
 ```sh
+bingoobjca@bogon a % fproxy -addr :7777 -log debug
+
+{"level":"info","ts":"2022-07-13T14:53:50.457+0800","caller":"fproxy/main.go:196","msg":"http server starting","Listening":"[::]:7777"}
+{"level":"info","ts":"2022-07-13T14:53:50.457+0800","caller":"fproxy/main.go:198","msg":"settings: export http_proxy=http://127.0.0.1:7777; export https_proxy=http://127.0.0.1:7777"}
+{"level":"info","ts":"2022-07-13T14:53:57.237+0800","caller":"fproxy/proxy.go:37","msg":"Incoming request","host":"127.0.0.1:5003"}
+{"level":"debug","ts":"2022-07-13T14:53:57.237+0800","caller":"fproxy/proxy.go:76","msg":"Connecting","host":"127.0.0.1:5003"}
+{"level":"debug","ts":"2022-07-13T14:53:57.237+0800","caller":"fproxy/proxy.go:85","msg":"Connected","host":"127.0.0.1:5003"}
+{"level":"debug","ts":"2022-07-13T14:53:57.237+0800","caller":"fproxy/proxy.go:87","msg":"Hijacking","host":"127.0.0.1:5003"}
+{"level":"debug","ts":"2022-07-13T14:53:57.237+0800","caller":"fproxy/proxy.go:106","msg":"Hijacked connection","host":"127.0.0.1:5003"}
+{"level":"debug","ts":"2022-07-13T14:53:57.293+0800","caller":"fproxy/debugconn.go:33","msg":"transferred","direction":">>> 127.0.0.1:58344-127.0.0.1:7777-127.0.0.1:58345-127.0.0.1:5003","bytes":267,"total":267}
+{"level":"debug","ts":"2022-07-13T14:53:57.296+0800","caller":"fproxy/debugconn.go:33","msg":"transferred","direction":"<<< 127.0.0.1:58344-127.0.0.1:7777-127.0.0.1:58345-127.0.0.1:5003","bytes":1494,"total":1494}
+{"level":"debug","ts":"2022-07-13T14:53:57.337+0800","caller":"fproxy/debugconn.go:33","msg":"transferred","direction":">>> 127.0.0.1:58344-127.0.0.1:7777-127.0.0.1:58345-127.0.0.1:5003","bytes":75,"total":342}
+{"level":"debug","ts":"2022-07-13T14:53:57.364+0800","caller":"fproxy/debugconn.go:33","msg":"transferred","direction":">>> 127.0.0.1:58344-127.0.0.1:7777-127.0.0.1:58345-127.0.0.1:5003","bytes":6,"total":348}
+{"level":"debug","ts":"2022-07-13T14:53:57.391+0800","caller":"fproxy/debugconn.go:33","msg":"transferred","direction":">>> 127.0.0.1:58344-127.0.0.1:7777-127.0.0.1:58345-127.0.0.1:5003","bytes":45,"total":393}
+{"level":"debug","ts":"2022-07-13T14:53:57.392+0800","caller":"fproxy/debugconn.go:33","msg":"transferred","direction":"<<< 127.0.0.1:58344-127.0.0.1:7777-127.0.0.1:58345-127.0.0.1:5003","bytes":51,"total":1545}
+{"level":"debug","ts":"2022-07-13T14:53:57.394+0800","caller":"fproxy/debugconn.go:33","msg":"transferred","direction":">>> 127.0.0.1:58344-127.0.0.1:7777-127.0.0.1:58345-127.0.0.1:5003","bytes":180,"total":573}
+{"level":"debug","ts":"2022-07-13T14:53:57.396+0800","caller":"fproxy/debugconn.go:33","msg":"transferred","direction":"<<< 127.0.0.1:58344-127.0.0.1:7777-127.0.0.1:58345-127.0.0.1:5003","bytes":341,"total":1886}
+{"level":"debug","ts":"2022-07-13T14:53:57.412+0800","caller":"fproxy/debugconn.go:33","msg":"transferred","direction":">>> 127.0.0.1:58344-127.0.0.1:7777-127.0.0.1:58345-127.0.0.1:5003","bytes":180,"total":753}
+{"level":"debug","ts":"2022-07-13T14:53:57.449+0800","caller":"fproxy/debugconn.go:33","msg":"transferred","direction":"<<< 127.0.0.1:58344-127.0.0.1:7777-127.0.0.1:58345-127.0.0.1:5003","bytes":341,"total":2227}
+{"level":"debug","ts":"2022-07-13T14:53:57.810+0800","caller":"fproxy/debugconn.go:40","msg":"read error","direction":">>> 127.0.0.1:58344-127.0.0.1:7777-127.0.0.1:58345-127.0.0.1:5003","total":753,"error":"EOF"}
+{"level":"debug","ts":"2022-07-13T14:53:57.810+0800","caller":"fproxy/debugconn.go:40","msg":"read error","direction":"<<< 127.0.0.1:58344-127.0.0.1:7777-127.0.0.1:58345-127.0.0.1:5003","total":2227,"error":"read tcp 127.0.0.1:58345->127.0.0.1:5003: use of closed network connection"}
+^C{"level":"info","ts":"2022-07-13T14:54:18.381+0800","caller":"fproxy/main.go:132","msg":"Server shutting down"}
+{"level":"info","ts":"2022-07-13T14:54:18.382+0800","caller":"fproxy/main.go:157","msg":"Server stopped"}
+```
+
+```sh
 $ fproxy
 {"level":"info","ts":"2022-07-06T09:35:04.196+0800","caller":"fproxy/main.go:191","msg":"Server starting","Listening":"[::]:54741"}
 {"level":"info","ts":"2022-07-06T09:36:18.941+0800","caller":"fproxy/proxy.go:37","msg":"Incoming request","host":"127.0.0.1:5003"}

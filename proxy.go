@@ -83,7 +83,6 @@ func (p *Proxy) handleTunneling(w http.ResponseWriter, r *http.Request) {
 	}
 
 	p.Logger.Debug("Connected", zap.String("host", r.Host))
-
 	p.Logger.Debug("Hijacking", zap.String("host", r.Host))
 
 	// Hijacker interface allows to take over the connection. After that the caller is
@@ -111,8 +110,9 @@ func (p *Proxy) handleTunneling(w http.ResponseWriter, r *http.Request) {
 	destConn.SetReadDeadline(now.Add(p.DestReadTimeout))
 	destConn.SetWriteDeadline(now.Add(p.DestWriteTimeout))
 
-	go transfer(destConn, clientConn)
-	go transfer(clientConn, destConn)
+	d := netDirection(destConn, clientConn)
+	go transfer(destConn, newDebugReadCloser(clientConn, ">>> "+d, p.Logger))
+	go transfer(clientConn, newDebugReadCloser(destConn, "<<< "+d, p.Logger))
 }
 
 func transfer(dest io.WriteCloser, src io.ReadCloser) {
