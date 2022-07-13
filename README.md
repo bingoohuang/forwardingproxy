@@ -411,7 +411,8 @@ destination server so these two parties can establish secure connection.
 3. ③ 从此以后 HTTPS Proxy 只负责 relay 客户端和 google.com 之间的数据，不会做任何解析，也没有办法解析，因为它根本没有参与 TLS handshake 这个过程。它所 relay 的数据包括：TLS handshake 数据包(如证书、加密算法、加密秘钥等)、加密过之后的HTTP payload。
 
 在步骤 ③ 这里，HTTPS Proxy 通过对客户端及服务端会话数据的透明转发，实现了 tunnel 的效果。
-![](_assets/2022-07-13-13-54-04.png)
+
+![HTTPS Proxy](_assets/2022-07-13-13-54-04.png)
 
 图 2：通过 HTTPS Proxy ，客户端和服务器直接创建了一个 tunnel
 
@@ -437,11 +438,11 @@ explicitly using a Server:
 
 ```go
 srv := &http.Server{
-ReadTimeout:  5 * time.Second,
-WriteTimeout: 10 * time.Second,
-IdleTimeout:  120 * time.Second,
-TLSConfig:    tlsConfig,
-Handler:      serveMux,
+	ReadTimeout:  5 * time.Second,
+	WriteTimeout: 10 * time.Second,
+	IdleTimeout:  120 * time.Second,
+	TLSConfig:    tlsConfig,
+	Handler:      serveMux,
 }
 log.Println(srv.ListenAndServeTLS("", ""))
 ```
@@ -453,13 +454,13 @@ Client Timeouts
 ```go
 c := &http.Client{
 Transport: &http.Transport{
-Dial: (&net.Dialer{
-Timeout:   30 * time.Second,
-KeepAlive: 30 * time.Second,
-}).Dial,
-TLSHandshakeTimeout:   10 * time.Second,
-ResponseHeaderTimeout: 10 * time.Second,
-ExpectContinueTimeout: 1 * time.Second,
+	Dial: (&net.Dialer{
+		imeout:   30 * time.Second,
+		eepAlive: 30 * time.Second,
+	}).Dial,
+	TLSHandshakeTimeout:   10 * time.Second,
+	ResponseHeaderTimeout: 10 * time.Second,
+	ExpectContinueTimeout: 1 * time.Second,
 }
 }
 ```
