@@ -7,7 +7,6 @@ import (
 	"crypto/tls"
 	"flag"
 	"fmt"
-	"github.com/bingoohuang/fproxy"
 	"io/ioutil"
 	"log"
 	"net"
@@ -17,6 +16,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bingoohuang/fproxy"
+
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/crypto/acme/autocert"
@@ -24,7 +25,7 @@ import (
 
 var (
 	pCaPath                  = flag.String("ca", "", "Filepath to certificate and private key, like -ca cert.pem,key.pem")
-	pAddr                    = flag.String("addr", ":0", "Server address")
+	pAddr                    = flag.String("addr", ":7777", "Server address, use :0 for random listening port (check it in the log)")
 	pAuth                    = flag.String("auth", "", "Server authentication username:password")
 	pAvoid                   = flag.String("avoid", "", "Site to be avoided")
 	pLog                     = flag.String("log", "info", "Log level")
