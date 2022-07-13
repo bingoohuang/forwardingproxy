@@ -471,3 +471,5 @@ ExpectContinueTimeout: 1 * time.Second,
 3. HTTP proxy written in Go. [COW](https://github.com/cyfdecyf/cow) can automatically identify blocked sites and use
    parent proxies to access.
 4. HTTP(S) Proxy in Golang in less than 100 lines of code [blog](https://medium.com/@mlowicki/http-s-proxy-in-golang-in-less-than-100-lines-of-code-6a51c2f2c38c)
+5. [手边的Tunnel知多少](https://www.51cto.com/article/708337.html)
+6. [HTTP 代理原理及实现](https://imququ.com/post/web-proxy.html)
