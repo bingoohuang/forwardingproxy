@@ -159,17 +159,7 @@ func main() {
 }
 
 func listenAndServeTLS(srv *http.Server, certFile, keyFile string, logger *zap.Logger) error {
-	addr := srv.Addr
-	if addr == "" {
-		addr = ":https"
-	}
-
-	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
-	if err != nil {
-		return err
-	}
-
-	l, err := fproxy.NewHttpsListener(addr, cert)
+	l, err := fproxy.CreateTLSListener(srv.Addr, certFile, keyFile)
 	if err != nil {
 		return err
 	}
@@ -184,14 +174,11 @@ func listenAndServeTLS(srv *http.Server, certFile, keyFile string, logger *zap.L
 }
 
 func listenAndServe(srv *http.Server, logger *zap.Logger) error {
-	addr := srv.Addr
-	if addr == "" {
-		addr = ":http"
-	}
-	l, err := net.Listen("tcp", addr)
+	l, err := fproxy.CreateListener(srv.Addr)
 	if err != nil {
 		return err
 	}
+
 	defer l.Close()
 
 	logger.Info("http server starting", zap.String("Listening", l.Addr().String()))
