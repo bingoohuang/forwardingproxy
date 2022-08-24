@@ -2,7 +2,6 @@ package fproxy
 
 import (
 	"bufio"
-	"bytes"
 	"crypto/tls"
 	"net"
 )
@@ -39,14 +38,27 @@ func (l *splitListener) Accept() (net.Conn, error) {
 	bc := &conn{Conn: c, buf: bufio.NewReader(c)}
 
 	// inspect the first few bytes
-	hdr, err := bc.buf.Peek(4)
+	hdr, err := bc.buf.Peek(1)
 	if err != nil {
 		_ = bc.Close()
 		return nil, err
 	}
 
-	// I don't remember what the TLS handshake looks like, but this works as a POC
-	if bytes.Equal(hdr, []byte{22, 3, 1, 0}) {
+	// iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 80 -j REDIRECT --to-port 8080
+	// iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 443 -j REDIRECT --to-port 3000
+	// https://github.com/mscdex/httpolyglot/blob/master/lib/index.js
+
+	// TLS and HTTP connections are easy to distinguish based on the first byte sent by clients trying to connect.
+	// https://github.com/mscdex/httpolyglot/issues/3#issuecomment-173680155
+	// Alright, I just read through RFC 5245 - The Transport Layer Security (TLS) Protocol - Version 1.2 and
+	// RFC 7230 - Hypertext Transfer Protocol (HTTP/1.1): Message Syntax and Routing which outline the structure
+	// of TLS and HTTP, and therefore explain why this works.
+	//
+	// It boils down to two facts, the first byte of a TLS message is always 22 and
+	// the first byte of an HTTP message will always be greater than 32 and less than (not equal to) 127.
+	// This means that the condition in the code is asserting that any message whose first byte is
+	// outside the range of a valid HTTP message must be a TLS message. And that totally works! 💃
+	if firstByte := hdr[0]; firstByte < 32 || firstByte >= 127 { // tls/ssl
 		l.Protocol = "https"
 		return tls.Server(bc, l.config), nil
 	}
