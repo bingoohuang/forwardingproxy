@@ -533,3 +533,28 @@ func main() {
 	err = gin.New().RunListener(l)
 }
 ```
+
+### resources
+
+1. [cmux](https://github.com/soheilhy/cmux) is a generic Go library to multiplex connections based on their payload.
+   Using cmux, you can serve gRPC, SSH, HTTPS, HTTP, Go RPC, and pretty much any other protocol on the same TCP
+   listener.
+2. [One Port to Rule Them All](https://httptoolkit.tech/blog/http-https-same-port/)
+
+   ```js
+   const firstByte = socket.read(1);
+   
+   if (firstByte === 0x16) {
+        // Do something with this TLS connection
+   } else if (firstByte === "P".charCodeAt(0) && isHttp2Preamble(socket)) {
+        // Do something with this HTTP/2 connection
+   } else {
+        // Do something with this HTTP request
+   }
+   ```
+
+    - If the first byte is 0x16, it's a TLS connection (this indicates a TLS handshake)
+    - If the first byte is 0x50 ('P'), it's probably the start of the HTTP/2 preamble (which looks like PRI *
+      HTTP/2.0\r\n\r\nSM\r\n\r\n, sent before the raw binary data begins on all HTTP/2 connections). We wait for the
+      full preamble, just to be sure, then treat this as plain HTTP/2.
+    - Otherwise, it's probably plain-text HTTP/1 (or some completely unknown protocol)

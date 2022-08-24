@@ -28,6 +28,12 @@ type splitListener struct {
 	Protocol string
 }
 
+// https://github.com/httptoolkit/httpolyglot/blob/master/src/index.ts
+const (
+	TlsHandshakeByte = 0x16 // SSLv3+ or TLS handshake
+	Http2Preface     = "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n"
+)
+
 func (l *splitListener) Accept() (net.Conn, error) {
 	c, err := l.Listener.Accept()
 	if err != nil {
@@ -58,9 +64,12 @@ func (l *splitListener) Accept() (net.Conn, error) {
 	// the first byte of an HTTP message will always be greater than 32 and less than (not equal to) 127.
 	// This means that the condition in the code is asserting that any message whose first byte is
 	// outside the range of a valid HTTP message must be a TLS message. And that totally works! 💃
-	if firstByte := hdr[0]; firstByte < 32 || firstByte >= 127 { // tls/ssl
+	if hdr[0] == TlsHandshakeByte { // tls/ssl
 		l.Protocol = "https"
 		return tls.Server(bc, l.config), nil
+	} else if hdr[0] == Http2Preface[0] {
+		// The connection _might_ be HTTP/2. To confirm, we need to keep
+		// reading until we get the whole stream:
 	}
 
 	l.Protocol = "http"
