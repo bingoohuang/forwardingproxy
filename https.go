@@ -30,6 +30,14 @@ type splitListener struct {
 
 // https://github.com/httptoolkit/httpolyglot/blob/master/src/index.ts
 const (
+	// TlsHandshakeByte https://tls13.xargs.org/#client-hello
+	// TLS Header 16 03 01 00 f8
+	// Record Header
+	// TLS sessions are broken into the sending and receiving of "records", which are blocks of data with a type, a protocol version, and a length.
+	// 16 - type is 0x16 (handshake record)
+	// 03 01 - protocol version is "3,1" (also known as TLS 1.0)
+	// 00 f8 - 0xF8 (248) bytes of handshake message follows
+	// Interestingly the version in this record is "3,1" (TLS 1.0) instead of "3,4" (TLS 1.3). This is done for interoperability with earlier implementations.
 	TlsHandshakeByte = 0x16 // SSLv3+ or TLS handshake
 	Http2Preface     = "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n"
 )
