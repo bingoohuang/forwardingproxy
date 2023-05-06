@@ -5,10 +5,11 @@ package main
 // https://groups.google.com/g/golang-nuts/c/4oZp1csAm2o
 import (
 	"crypto/tls"
-	"github.com/bingoohuang/fproxy"
 	"log"
 	"net/http"
 	"os"
+
+	"github.com/bingoohuang/fproxy"
 )
 
 func main() {

@@ -22,9 +22,10 @@ import (
 // Proxy is a HTTPS forward proxy.
 type Proxy struct {
 	Logger     *zap.Logger
-	Auth       string
-	Avoid      string
 	Forwarding *httputil.ReverseProxy
+
+	Auth  string
+	Avoid string
 
 	DestDialTimeout    time.Duration
 	DestReadTimeout    time.Duration

@@ -2,9 +2,10 @@ package fproxy
 
 import (
 	"fmt"
-	"go.uber.org/zap"
 	"io"
 	"net"
+
+	"go.uber.org/zap"
 )
 
 func netDirection(dest, src net.Conn) string {
@@ -21,9 +22,9 @@ func newDebugReadCloser(r io.ReadCloser, direction string, logger *zap.Logger) i
 
 type debugReadCloser struct {
 	io.ReadCloser
-	Direction string
 	*zap.Logger
-	n int
+	Direction string
+	n         int
 }
 
 func (r *debugReadCloser) Read(p []byte) (n int, err error) {

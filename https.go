@@ -30,7 +30,7 @@ type splitListener struct {
 
 // https://github.com/httptoolkit/httpolyglot/blob/master/src/index.ts
 const (
-	// TlsHandshakeByte https://tls13.xargs.org/#client-hello
+	// TLSHandshakeByte https://tls13.xargs.org/#client-hello
 	// TLS Header 16 03 01 00 f8
 	// Record Header
 	// TLS sessions are broken into the sending and receiving of "records", which are blocks of data with a type, a protocol version, and a length.
@@ -38,7 +38,7 @@ const (
 	// 03 01 - protocol version is "3,1" (also known as TLS 1.0)
 	// 00 f8 - 0xF8 (248) bytes of handshake message follows
 	// Interestingly the version in this record is "3,1" (TLS 1.0) instead of "3,4" (TLS 1.3). This is done for interoperability with earlier implementations.
-	TlsHandshakeByte = 0x16 // SSLv3+ or TLS handshake
+	TLSHandshakeByte = 0x16 // SSLv3+ or TLS handshake
 	Http2Preface     = "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n"
 )
 
@@ -72,7 +72,7 @@ func (l *splitListener) Accept() (net.Conn, error) {
 	// the first byte of an HTTP message will always be greater than 32 and less than (not equal to) 127.
 	// This means that the condition in the code is asserting that any message whose first byte is
 	// outside the range of a valid HTTP message must be a TLS message. And that totally works! 💃
-	if hdr[0] == TlsHandshakeByte { // tls/ssl
+	if hdr[0] == TLSHandshakeByte { // tls/ssl
 		l.Protocol = "https"
 		return tls.Server(bc, l.config), nil
 	} else if hdr[0] == Http2Preface[0] {

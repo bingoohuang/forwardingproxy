@@ -5,6 +5,7 @@ package main
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -17,7 +18,6 @@ import (
 	"time"
 
 	"github.com/bingoohuang/fproxy"
-
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/crypto/acme/autocert"
@@ -138,19 +138,21 @@ func main() {
 	}()
 
 	var svrErr error
-	if *pCaPath != "" {
+	switch {
+	case *pCaPath != "":
 		ps := strings.SplitN(*pCaPath, ",", 2)
 		if len(ps) != 2 {
-			log.Fatalf("invalid flags, e.g. -ca cert.pem,key.pem")
+			log.Printf("invalid flags, e.g. -ca cert.pem,key.pem")
+			return
 		}
 		svrErr = listenAndServeTLS(s, ps[0], ps[1], p.Logger)
-	} else if *pLetsEncrypt {
+	case *pLetsEncrypt:
 		svrErr = listenAndServeTLS(s, "", "", p.Logger)
-	} else {
+	default:
 		svrErr = listenAndServe(s, p.Logger)
 	}
 
-	if svrErr != http.ErrServerClosed {
+	if !errors.Is(svrErr, http.ErrServerClosed) {
 		p.Logger.Error("Listening for incoming connections failed", zap.Error(svrErr))
 	}
 
