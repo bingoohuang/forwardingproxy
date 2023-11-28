@@ -506,6 +506,7 @@ ExpectContinueTimeout: 1 * time.Second,
    code [blog](https://medium.com/@mlowicki/http-s-proxy-in-golang-in-less-than-100-lines-of-code-6a51c2f2c38c)
 5. [手边的Tunnel知多少](https://www.51cto.com/article/708337.html)
 6. [HTTP 代理原理及实现](https://imququ.com/post/web-proxy.html)
+7. [mitmproxy](https://github.com/lqqyt2423/go-mitmproxy) implemented with golang. 用 Golang 实现的中间人攻击（Man-in-the-middle），解析、监测、篡改 HTTP/HTTPS 流量。
 
 ## serving http and https connections over the same port.
 
